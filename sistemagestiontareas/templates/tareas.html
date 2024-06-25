@@ -1,0 +1,13 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Tareas</h1>
+    <ul class="list-group">
+        {% for tarea in tareas %}
+            <li class="list-group-item">{{ tarea.nombre }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
