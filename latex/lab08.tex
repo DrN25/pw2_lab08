@@ -179,6 +179,12 @@ impresión de pdf y emails}
 \section{Ejercicios Propuestos}
 Se trabajó un proyecto Django en el cual se trabaja con las relaciones de uno a muchos, de muchos a muchos, impresión de pdfs y envío de emails. Para ello, tenemos los siguientes modelos para cada uno de estos puntos. 
 
+\subsection{Video del Proyecto en Flipgrid:}
+\begin{itemize}
+    \item \textbf{Link del video}:
+    https://flip.com/s/z85u-Xz4cV4f
+\end{itemize}
+
   
 \subsection{Modelos de Relación: De Uno a Muchos}
 \begin{itemize}
@@ -271,6 +277,123 @@ class TareaTrabajador(models.Model):
         return f'Tarea: {self.tarea.nombre} - Trabajador: {self.trabajador.nombre}'
     \end{lstlisting}
 
+\subsection{Función de generación del PDF y envio de correo}
+Se crea una respuesta http
+
+\begin{itemize}
+    \item \textbf{generar\_pdf()}:
+Genera un archivo PDF con información de proyectos, tareas, trabajadores, y sus asignaciones, y lo envía como respuesta HTTP para su descarga.
+
+    \item \textbf{enviar\_correo()}:
+Envía correos electrónicos a todos los trabajadores con un mensaje predefinido, y muestra mensajes de éxito o error en la interfaz.
+
+\begin{itemize}
+ \item \textbf Cada modelo también tiene un método que devuelve una representación en cadena de texto del objeto.
+\end{itemize}
+
+    \begin{lstlisting}[language=Python,caption={views.py}][H]
+	def generar_pdf(request):
+    proyectos = Proyecto.objects.all()
+    tareas = Tarea.objects.all()
+    trabajadores = Trabajador.objects.all()
+    tareas_trabajadores = TareaTrabajador.objects.all()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="informe_proyectos_tareas.pdf"'
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=50, rightMargin=50, topMargin=50, bottomMargin=50)
+    elements = []
+
+    elements.append(Paragraph("Informe de Proyectos, Tareas y Trabajadores"))
+
+    elements.append(Paragraph("Proyectos:"))
+    proyecto_data = [['ID', 'Nombre', 'Descripción']]
+    for proyecto in proyectos:
+        proyecto_data.append([str(proyecto.id), proyecto.nombre, proyecto.descripcion])
+
+    proyecto_table = Table(proyecto_data, colWidths=[50, 200, 300])
+    proyecto_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(proyecto_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Tareas:"))
+    tarea_data = [['ID', 'Nombre', 'Descripción']]
+    for tarea in tareas:
+        tarea_data.append([str(tarea.id), tarea.nombre, tarea.descripcion])
+
+    tarea_table = Table(tarea_data, colWidths=[50, 200, 300])
+    tarea_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(tarea_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Trabajadores:"))
+    trabajador_data = [['ID', 'Nombre', 'Correo']]
+    for trabajador in trabajadores:
+        trabajador_data.append([str(trabajador.id), trabajador.nombre, trabajador.correo])
+
+    trabajador_table = Table(trabajador_data, colWidths=[50, 200, 200])
+    trabajador_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(trabajador_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Tareas de Trabajadores:"))
+    tt_data = [['Tarea', 'Trabajador']]
+    for tt in tareas_trabajadores:
+        tt_data.append([tt.tarea.nombre, tt.trabajador.nombre])
+
+    tt_table = Table(tt_data, colWidths=[200, 200])
+    tt_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(tt_table)
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+
+    return response
+
+def enviar_correo(request):
+    try:
+        trabajadores = Trabajador.objects.all()
+        for trabajador in trabajadores:
+            send_mail(
+                'Mensaje del Grupo 3 de PWEB2',
+                'Hola, este es un mensaje del Grupo 3 de PWEB2.',
+                'grupopweb2sh@gmail.com',
+                [trabajador.correo],
+                fail_silently=False,
+            )
+        messages.success(request, 'Correos enviados exitosamente.')
+    except Exception as e:
+        messages.error(request, f'Hubo un error al enviar los correos: {e}')
+    return redirect('index')
+
+    \end{lstlisting}
+\end{itemize}
 
 
 \section{Diseño de la Página Web}
@@ -278,7 +401,7 @@ class TareaTrabajador(models.Model):
 
  \begin{figure}[h]
     \centering
-    \includegraphics[width=0.9\textwidth]{img/template1.png}
+    \includegraphics[width=0.9\textwidth]{img/principal.png}
     \caption{Página de los proyectos creados.}
 \end{figure}
 
@@ -301,7 +424,43 @@ class TareaTrabajador(models.Model):
     \caption{Página admin de las tablas creadas.}
 \end{figure}
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{img/correo.png}
+    \includegraphics[width=0.9\textwidth]{img/correo1.png}
+    \caption{Imagenes de los correos enviados}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{img/pdf1.png}
+    \includegraphics[width=0.9\textwidth]{img/pdf2.png}
+    \caption{Imagenes del pdf generado.}
+\end{figure}
+
 \clearpage
+
+ \section{Commits realizados}:
+
+    \begin{lstlisting}[language=Python,caption={commits}][H]
+* 893fcc5 (HEAD -> main, origin/main, origin/HEAD) Final del manage.py completo
+* 88f6cdb funcionalidades completas , final
+* 0a500f0 eliminación de credenciales de correo temporal
+* d9dcd46 funcionalidades de enviar correo y generar pdf
+* 3af2a73 Se quito las opciones de agregar y eliminar
+* 2aa7418 Añadiendo latex y pdf
+* f86e9db eliminando pdf
+* b262f4c eliminando latex
+* e3ee7f3 Add files via upload
+* 2c46a13 proyecto culminado
+* 4113a4d añadiendo el gestiontareas completado
+* b7ab375 Delete Project_lab08 directory
+* d267ccb Delete sistemagestiontareas
+* 97c9907 actualizado el sistemagestiontareas
+* 6695b81 todo settings.py actualizado
+* cb39dbe añadiendo la base de datos
+* 68fe603 Add files via upload
+    \end{lstlisting}
 
 \section{\textcolor{red}{Rúbricas}}
 	
@@ -321,7 +480,7 @@ class TareaTrabajador(models.Model):
 		\end{tabular}
 	}
 	\end{table}
-	
+
 
 	\subsection{\textcolor{red}{Rúbrica para el contenido del Informe y demostración}}
 	\begin{itemize}			
@@ -355,9 +514,9 @@ class TareaTrabajador(models.Model):
 			\hline
     		\multicolumn{2}{|c|}{Contenido y demostración} & Puntos & Checklist & Estudiante & Profesor\\
 			\hline
-			\textbf{1. GitHub} & Hay enlace URL activo del directorio para el  laboratorio hacia su repositorio GitHub con código fuente terminado y fácil de revisar. &2 &X &1 & \\ 
+			\textbf{1. GitHub} & Hay enlace URL activo del directorio para el  laboratorio hacia su repositorio GitHub con código fuente terminado y fácil de revisar. &2 &X &2 & \\ 
 			\hline
-			\textbf{2. Commits} &  Hay capturas de pantalla de los commits más importantes con sus explicaciones detalladas. (El profesor puede preguntar para refrendar calificación). &4 &X &1 & \\ 
+			\textbf{2. Commits} &  Hay capturas de pantalla de los commits más importantes con sus explicaciones detalladas. (El profesor puede preguntar para refrendar calificación). &4 &X &2 & \\ 
 			\hline 
 			\textbf{3. Código fuente} &  Hay porciones de código fuente importantes con numeración y explicaciones detalladas de sus funciones. &2 &X &2 & \\ 
 			\hline 
@@ -365,13 +524,13 @@ class TareaTrabajador(models.Model):
 			\hline			
 			\textbf{5. Pregunta} & Se responde con completitud a la pregunta formulada en la tarea.  (El profesor puede preguntar para refrendar calificación).  &2 &X &2 & \\ 
 			\hline	
-			\textbf{6. Fechas} & Las fechas de modificación del código fuente estan dentro de los plazos de fecha de entrega establecidos. &2 &X &1.5 & \\ 
+			\textbf{6. Fechas} & Las fechas de modificación del código fuente estan dentro de los plazos de fecha de entrega establecidos. &2 &X &0.5 & \\ 
 			\hline 
 			\textbf{7. Ortografía} & El documento no muestra errores ortográficos. &2 &X &2 & \\ 
 			\hline 
 			\textbf{8. Madurez} & El Informe muestra de manera general una evolución de la madurez del código fuente,  explicaciones puntuales pero precisas y un acabado impecable.   (El profesor puede preguntar para refrendar calificación).  &4 &X &3 & \\ 
 			\hline
-			\multicolumn{2}{|c|}{\textbf{Total}} &20 & &14.5 & \\ 
+			\multicolumn{2}{|c|}{\textbf{Total}} &20 & &15.5 & \\ 
 			\hline
 		\end{tabular}
 		%\end{center}
