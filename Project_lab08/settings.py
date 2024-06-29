@@ -33,6 +33,13 @@ INSTALLED_APPS = [
     'anymail',
 ]
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_PORT = 2525
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = '6c36005455c97b'
+EMAIL_HOST_PASSWORD = 'd39fa4abfc92d9'
+DEFAULT_FROM_EMAIL = 'grupopweb2sh@gmail.com'
 
 
 TEMPLATES = [
