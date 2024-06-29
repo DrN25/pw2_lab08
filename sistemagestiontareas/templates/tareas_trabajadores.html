@@ -1,13 +1,29 @@
 
+
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Tareas de Trabajadores</h1>
-    <ul class="list-group">
-        {% for tarea_trabajador in tareas_trabajadores %}
-            <li class="list-group-item">{{ tarea_trabajador.tarea.nombre }} - {{ tarea_trabajador.trabajador.nombre }}</li>
-        {% endfor %}
-    </ul>
+<div class="row">
+    <div class="col-md-8">
+        <h2>Tareas de Trabajadores</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tarea</th>
+                    <th>Trabajador</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tt in tareas_trabajadores %}
+                <tr>
+                    <td>{{ tt.id }}</td>
+                    <td>{{ tt.tarea }}</td>
+                    <td>{{ tt.trabajador }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -1,13 +1,37 @@
 
+
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Tareas</h1>
-    <ul class="list-group">
-        {% for tarea in tareas %}
-            <li class="list-group-item">{{ tarea.nombre }}</li>
-        {% endfor %}
-    </ul>
+<div class="row">
+    <div class="col-md-8">
+        <h2>Tareas</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Proyecto</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Fecha de Creación</th>
+                    <th>Fecha de Vencimiento</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarea in tareas %}
+                <tr>
+                    <td>{{ tarea.id }}</td>
+                    <td>{{ tarea.proyecto }}</td>
+                    <td>{{ tarea.nombre }}</td>
+                    <td>{{ tarea.descripcion }}</td>
+                    <td>{{ tarea.fecha_creacion }}</td>
+                    <td>{{ tarea.fecha_vencimiento }}</td>
+                    <td>{{ tarea.estado }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

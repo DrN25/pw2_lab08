@@ -1,32 +1,18 @@
 
-from django.shortcuts import render
-from .models import Proyecto, Tarea, Trabajador, TareaTrabajador
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from .models import Proyecto
-from .forms import ProyectoForm
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from .models import Proyecto, Tarea, Trabajador, TareaTrabajador
+from io import BytesIO
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Trabajador
-
+from django.contrib import messages
 def home(request):
     proyectos = Proyecto.objects.all()
-    form = ProyectoForm()
-    return render(request, 'index.html', {'proyectos': proyectos, 'form': form})
+    return render(request, 'index.html', {'proyectos': proyectos})
 
-def agregar_proyecto(request):
-    if request.method == 'POST':
-        form = ProyectoForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
-    return JsonResponse({'success': False})
-
-def eliminar_proyecto(request, proyecto_id):
-    proyecto = get_object_or_404(Proyecto, pk=proyecto_id)
-    proyecto.delete()
-    return JsonResponse({'message': 'Proyecto eliminado correctamente.'})
 def tareas(request):
     tareas = Tarea.objects.all()
     return render(request, 'tareas.html', {'tareas': tareas})
@@ -39,33 +25,102 @@ def tareas_trabajadores(request):
     tareas_trabajadores = TareaTrabajador.objects.all()
     return render(request, 'tareas_trabajadores.html', {'tareas_trabajadores': tareas_trabajadores})
 
-def enviar_correo(request):
-    if request.method == 'POST':
-        trabajadores = Trabajador.objects.all()
-        destinatarios = [trabajador.correo for trabajador in trabajadores]
-
-        asunto = "Hola"
-        mensaje = "Hola, aquí te paso los archivos hasta el momento."
-        remitente = settings.DEFAULT_FROM_EMAIL
-
-        try:
-            send_mail(asunto, mensaje, remitente, destinatarios)
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    return JsonResponse({'success': False}, status=400)
 def generar_pdf(request):
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    p.drawString(100, 750, "Lista de Proyectos:")
     proyectos = Proyecto.objects.all()
-    y = 730
+    tareas = Tarea.objects.all()
+    trabajadores = Trabajador.objects.all()
+    tareas_trabajadores = TareaTrabajador.objects.all()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="informe_proyectos_tareas.pdf"'
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=50, rightMargin=50, topMargin=50, bottomMargin=50)
+    elements = []
+
+    elements.append(Paragraph("Informe de Proyectos, Tareas y Trabajadores"))
+
+    elements.append(Paragraph("Proyectos:"))
+    proyecto_data = [['ID', 'Nombre', 'Descripción']]
     for proyecto in proyectos:
-        p.drawString(100, y, f"Nombre: {proyecto.nombre}, Descripción: {proyecto.descripcion}")
-        y -= 20
-        if y < 100:
-            p.showPage()
-            y = 750
-    p.save()
-    buffer.seek(0)
-    return HttpResponse(buffer, content_type='application/pdf')
+        proyecto_data.append([str(proyecto.id), proyecto.nombre, proyecto.descripcion])
+
+    proyecto_table = Table(proyecto_data, colWidths=[50, 200, 300])
+    proyecto_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(proyecto_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Tareas:"))
+    tarea_data = [['ID', 'Nombre', 'Descripción']]
+    for tarea in tareas:
+        tarea_data.append([str(tarea.id), tarea.nombre, tarea.descripcion])
+
+    tarea_table = Table(tarea_data, colWidths=[50, 200, 300])
+    tarea_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(tarea_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Trabajadores:"))
+    trabajador_data = [['ID', 'Nombre', 'Correo']]
+    for trabajador in trabajadores:
+        trabajador_data.append([str(trabajador.id), trabajador.nombre, trabajador.correo])
+
+    trabajador_table = Table(trabajador_data, colWidths=[50, 200, 200])
+    trabajador_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(trabajador_table)
+
+    elements.append(Paragraph("<br/><br/>"))
+
+    elements.append(Paragraph("Tareas de Trabajadores:"))
+    tt_data = [['Tarea', 'Trabajador']]
+    for tt in tareas_trabajadores:
+        tt_data.append([tt.tarea.nombre, tt.trabajador.nombre])
+
+    tt_table = Table(tt_data, colWidths=[200, 200])
+    tt_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, (0, 0, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), (0.8, 0.8, 0.8)),
+    ]))
+    elements.append(tt_table)
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+
+    return response
+
+def enviar_correo(request):
+    try:
+        trabajadores = Trabajador.objects.all()
+        for trabajador in trabajadores:
+            send_mail(
+                'Mensaje del Grupo 3 de PWEB2',
+                'Hola, este es un mensaje del Grupo 3 de PWEB2.',
+                'grupopweb2sh@gmail.com',
+                [trabajador.correo],
+                fail_silently=False,
+            )
+        messages.success(request, 'Correos enviados exitosamente.')
+    except Exception as e:
+        messages.error(request, f'Hubo un error al enviar los correos: {e}')
+    return redirect('index')
