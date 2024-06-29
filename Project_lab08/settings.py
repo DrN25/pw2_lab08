@@ -32,18 +32,20 @@ INSTALLED_APPS = [
     'django_filters',
     'anymail',
 ]
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_PORT = 2525
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'grupopweb2sh@gmail.com'
-EMAIL_HOST_PASSWORD = '123456789sh'
+EMAIL_HOST_USER = '6c36005455c97b'
+EMAIL_HOST_PASSWORD = 'd39fa4abfc92d9'
 DEFAULT_FROM_EMAIL = 'grupopweb2sh@gmail.com'
+
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'sistemagestiontareas/templates'],  # Ruta a las plantillas de la aplicación 'sistemagestiontareas'
+        'DIRS': [BASE_DIR / 'sistemagestiontareas/templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
